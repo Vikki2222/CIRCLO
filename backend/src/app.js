@@ -11,8 +11,10 @@ const AppError = require('./utils/AppError');
 const logger = require('./utils/logger');
 const passport = require('./config/passport');
 const authRoutes = require('./routes/auth.routes');
+const meetupRoutes = require('./routes/meetup.routes');
 
 const app = express();
+
 
 // --- Security headers ---
 app.use(helmet());
@@ -59,6 +61,7 @@ app.get('/health', (req, res) => {
 // --- API routes (mounted here in later steps) ---
 app.use('/api/v1/auth', authRoutes);
 // app.use('/api/v1/meetups', meetupRoutes);
+app.use('/api/v1/meetups', meetupRoutes);
 
 
 // --- 404 handler ---
