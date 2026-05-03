@@ -8,7 +8,6 @@ const AppError = require('../utils/AppError');
 const createMeetup = async (hostId, body) => {
   const { title, description, category, coordinates, address, capacity, startsAt, endsAt, tags, coverImage } = body;
 
-  // coordinates arrives as [lng, lat] from the client
   const meetup = await Meetup.create({
     title,
     description,
@@ -16,7 +15,7 @@ const createMeetup = async (hostId, body) => {
     host: hostId,
     location: {
       type: 'Point',
-      coordinates, // [longitude, latitude]
+      coordinates,
       address,
     },
     capacity,
@@ -24,7 +23,6 @@ const createMeetup = async (hostId, body) => {
     endsAt,
     tags,
     coverImage,
-    // Host auto-joins their own meetup
     attendees: [hostId],
   });
 
@@ -35,10 +33,6 @@ const createMeetup = async (hostId, body) => {
 // FIND NEARBY
 // ─────────────────────────────────────────────
 
-/**
- * Returns meetups near [lng, lat] within radiusKm.
- * Supports pagination and category filter.
- */
 const findNearbyMeetups = async ({ lng, lat, radiusKm = 10, category, page = 1, limit = 20 }) => {
   const skip = (page - 1) * limit;
 
@@ -46,7 +40,7 @@ const findNearbyMeetups = async ({ lng, lat, radiusKm = 10, category, page = 1, 
     location: {
       $near: {
         $geometry: { type: 'Point', coordinates: [parseFloat(lng), parseFloat(lat)] },
-        $maxDistance: radiusKm * 1000, // km → meters
+        $maxDistance: radiusKm * 1000,
       },
     },
     status: { $in: ['active', 'full'] },
@@ -55,21 +49,20 @@ const findNearbyMeetups = async ({ lng, lat, radiusKm = 10, category, page = 1, 
 
   if (category) filter.category = category;
 
-  // $near doesn't support .countDocuments() — get total separately
-  // We use $geoWithin for the count (no sorting, just counting)
-  const [meetups, total] = await Promise.all([
+  const [rawMeetups, total] = await Promise.all([
     Meetup.find(filter)
       .populate('host', 'name avatar')
-      .select('-attendees -isDeleted -__v')
+      .select('-isDeleted -__v')
       .skip(skip)
-      .limit(limit),
+      .limit(limit)
+      .lean(), // ← plain JS objects, fast, no virtuals but attendees array is present
 
     Meetup.countDocuments({
       location: {
         $geoWithin: {
           $centerSphere: [
             [parseFloat(lng), parseFloat(lat)],
-            radiusKm / 6378.1, // Convert km → radians (Earth radius = 6378.1 km)
+            radiusKm / 6378.1,
           ],
         },
       },
@@ -79,11 +72,19 @@ const findNearbyMeetups = async ({ lng, lat, radiusKm = 10, category, page = 1, 
     }),
   ]);
 
+  // Manually compute counts since lean() skips virtuals
+  const meetups = rawMeetups.map((m) => ({
+    ...m,
+    attendeeCount: m.attendees?.length ?? 0,
+    spotsLeft:     m.capacity - (m.attendees?.length ?? 0),
+    isFull:        (m.attendees?.length ?? 0) >= m.capacity,
+  }));
+
   return {
     meetups,
     pagination: {
       total,
-      page: parseInt(page),
+      page:  parseInt(page),
       pages: Math.ceil(total / limit),
       limit: parseInt(limit),
     },
@@ -110,15 +111,13 @@ const getMeetupById = async (meetupId) => {
 const UPDATABLE_FIELDS = [
   'title', 'description', 'category',
   'capacity', 'startsAt', 'endsAt',
-  'tags', 'coverImage',
-  'location', // allow address update but not used to move meetup arbitrarily
+  'tags', 'coverImage', 'location',
 ];
 
 const updateMeetup = async (meetupId, userId, body) => {
   const meetup = await Meetup.findById(meetupId);
   if (!meetup) throw new AppError('Meetup not found.', 404);
 
-  // Only the host can update
   if (meetup.host.toString() !== userId.toString()) {
     throw new AppError('Only the host can update this meetup.', 403);
   }
@@ -127,14 +126,10 @@ const updateMeetup = async (meetupId, userId, body) => {
     throw new AppError('Cannot update a cancelled meetup.', 400);
   }
 
-  // Whitelist updatable fields — prevent patching host, attendees, status directly
   UPDATABLE_FIELDS.forEach((field) => {
-    if (body[field] !== undefined) {
-      meetup[field] = body[field];
-    }
+    if (body[field] !== undefined) meetup[field] = body[field];
   });
 
-  // If capacity is reduced, ensure it's not below current attendee count
   if (body.capacity !== undefined && body.capacity < meetup.attendees.length) {
     throw new AppError(
       `Cannot reduce capacity below current attendee count (${meetup.attendees.length}).`,
@@ -158,7 +153,6 @@ const deleteMeetup = async (meetupId, userId) => {
     throw new AppError('Only the host can delete this meetup.', 403);
   }
 
-  // Soft delete + cancel so attendees know it's gone
   meetup.isDeleted = true;
   meetup.status = 'cancelled';
   await meetup.save({ validateBeforeSave: false });
@@ -171,21 +165,29 @@ const deleteMeetup = async (meetupId, userId) => {
 const getHostMeetups = async (userId, { page = 1, limit = 10 }) => {
   const skip = (page - 1) * limit;
 
-  const [meetups, total] = await Promise.all([
+  const [rawMeetups, total] = await Promise.all([
     Meetup.find({ host: userId })
       .sort({ startsAt: -1 })
       .skip(skip)
       .limit(limit)
-      .select('-attendees -__v'),
+      .select('-isDeleted -__v')
+      .lean(),
 
     Meetup.countDocuments({ host: userId }),
   ]);
+
+  const meetups = rawMeetups.map((m) => ({
+    ...m,
+    attendeeCount: m.attendees?.length ?? 0,
+    spotsLeft:     m.capacity - (m.attendees?.length ?? 0),
+    isFull:        (m.attendees?.length ?? 0) >= m.capacity,
+  }));
 
   return {
     meetups,
     pagination: {
       total,
-      page: parseInt(page),
+      page:  parseInt(page),
       pages: Math.ceil(total / limit),
       limit: parseInt(limit),
     },
@@ -199,16 +201,17 @@ const getHostMeetups = async (userId, { page = 1, limit = 10 }) => {
 const getJoinedMeetups = async (userId, { page = 1, limit = 10 }) => {
   const skip = (page - 1) * limit;
 
-  const [meetups, total] = await Promise.all([
+  const [rawMeetups, total] = await Promise.all([
     Meetup.find({
       attendees: userId,
-      host: { $ne: userId }, // Exclude ones they host (use /my for that)
+      host: { $ne: userId },
     })
       .sort({ startsAt: 1 })
       .skip(skip)
       .limit(limit)
       .populate('host', 'name avatar')
-      .select('-attendees -__v'),
+      .select('-isDeleted -__v')
+      .lean(),
 
     Meetup.countDocuments({
       attendees: userId,
@@ -216,11 +219,18 @@ const getJoinedMeetups = async (userId, { page = 1, limit = 10 }) => {
     }),
   ]);
 
+  const meetups = rawMeetups.map((m) => ({
+    ...m,
+    attendeeCount: m.attendees?.length ?? 0,
+    spotsLeft:     m.capacity - (m.attendees?.length ?? 0),
+    isFull:        (m.attendees?.length ?? 0) >= m.capacity,
+  }));
+
   return {
     meetups,
     pagination: {
       total,
-      page: parseInt(page),
+      page:  parseInt(page),
       pages: Math.ceil(total / limit),
       limit: parseInt(limit),
     },

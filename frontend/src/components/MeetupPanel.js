@@ -5,24 +5,30 @@ import ChatDrawer from './ChatDrawer';
 import styles from './MeetupPanel.module.css';
 
 const MeetupPanel = ({ meetup, onClose, onJoinLeave }) => {
-  const { user }      = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
+  const { user }        = useAuth();
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
   const [showChat, setShowChat] = useState(false);
 
   if (!meetup) return null;
 
-  const [lng, lat]  = meetup.location.coordinates;
-  const attendees   = meetup.attendees || [];
-  const count       = meetup.attendeeCount ?? attendees.length;
-  const capacity    = meetup.capacity;
-  const spotsLeft   = meetup.spotsLeft ?? (capacity - count);
-  const isFull      = meetup.status === 'full' || spotsLeft <= 0;
+  const [lng, lat] = meetup.location.coordinates;
+  const attendees  = meetup.attendees || [];
+  const capacity   = meetup.capacity;
 
-  const isHost      = meetup.host?._id === user?._id || meetup.host === user?._id;
-  const isAttendee  = attendees.some(
-    (a) => (a._id || a) === user?._id
-  );
+  // Always prefer socket-updated numeric fields over array length
+  const count     = typeof meetup.attendeeCount === 'number'
+    ? meetup.attendeeCount
+    : attendees.length;
+
+  const spotsLeft = typeof meetup.spotsLeft === 'number'
+    ? meetup.spotsLeft
+    : capacity - count;
+
+  const isFull    = meetup.status === 'full' || spotsLeft <= 0;
+
+  const isHost     = meetup.host?._id === user?._id || meetup.host === user?._id;
+  const isAttendee = attendees.some((a) => (a._id || a) === user?._id);
 
   const handleJoin = async () => {
     setError('');
@@ -62,9 +68,13 @@ const MeetupPanel = ({ meetup, onClose, onJoinLeave }) => {
     hour: '2-digit', minute: '2-digit',
   });
 
+  // Capacity bar percentage — always derived from count
+  const fillPercent = Math.min((count / capacity) * 100, 100);
+
   return (
     <>
       <div className={styles.panel}>
+
         {/* Header */}
         <div className={styles.header}>
           <span className={`${styles.badge} ${styles[meetup.category] || styles.other}`}>
@@ -107,13 +117,16 @@ const MeetupPanel = ({ meetup, onClose, onJoinLeave }) => {
             <div
               className={styles.capacityFill}
               style={{
-                width: `${Math.min((count / capacity) * 100, 100)}%`,
-                background: isFull ? '#ef4444' : '#22c55e',
+                width:      `${fillPercent}%`,
+                background:  isFull ? '#ef4444' : '#22c55e',
+                transition: 'width 0.4s ease, background 0.4s ease',
               }}
             />
           </div>
           <div className={styles.spotsLabel}>
-            {isFull ? 'Meetup is full' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`}
+            {isFull
+              ? 'Meetup is full'
+              : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`}
           </div>
 
           {/* Tags */}
@@ -141,9 +154,8 @@ const MeetupPanel = ({ meetup, onClose, onJoinLeave }) => {
 
           {error && <div className={styles.error}>{error}</div>}
 
-          {/* Actions */}
+          {/* Actions row 1 */}
           <div className={styles.actions}>
-            {/* Chat button — always visible */}
             <button
               className={styles.chatBtn}
               onClick={() => setShowChat((v) => !v)}
@@ -156,7 +168,7 @@ const MeetupPanel = ({ meetup, onClose, onJoinLeave }) => {
             </button>
           </div>
 
-          {/* Join / Leave row */}
+          {/* Actions row 2 — join/leave */}
           <div className={styles.actions} style={{ marginTop: 8 }}>
             {!isHost && (
               isAttendee ? (
@@ -182,11 +194,10 @@ const MeetupPanel = ({ meetup, onClose, onJoinLeave }) => {
               <span className={styles.hostBadge}>⭐ You're hosting this meetup</span>
             )}
           </div>
-
         </div>
       </div>
 
-      {/* Chat drawer — renders beside the panel */}
+      {/* Chat drawer */}
       {showChat && (
         <ChatDrawer
           meetup={meetup}

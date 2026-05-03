@@ -8,14 +8,15 @@ export const SocketProvider = ({ children }) => {
   const { isAuth } = useAuth();
   const socketRef  = useRef(null);
   const [connected, setConnected] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0);
 
   useEffect(() => {
     if (!isAuth) {
-      // Disconnect if user logs out
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
         setConnected(false);
+        setForceUpdate((v) => v + 1);
       }
       return;
     }
@@ -23,8 +24,7 @@ export const SocketProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    // Single shared socket for the entire app
-    socketRef.current = io(
+    const newSocket = io(
       process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000',
       {
         auth: { token },
@@ -33,23 +33,27 @@ export const SocketProvider = ({ children }) => {
       }
     );
 
-    socketRef.current.on('connect', () => {
+    newSocket.on('connect', () => {
       setConnected(true);
-      console.debug('Socket connected:', socketRef.current.id);
+      console.debug('Socket connected:', newSocket.id);
     });
 
-    socketRef.current.on('disconnect', () => {
+    newSocket.on('disconnect', () => {
       setConnected(false);
     });
 
-    socketRef.current.on('connect_error', (err) => {
+    newSocket.on('connect_error', (err) => {
       console.error('Socket error:', err.message);
     });
 
+    socketRef.current = newSocket;
+    setForceUpdate((v) => v + 1);
+
     return () => {
-      socketRef.current?.disconnect();
+      newSocket.disconnect();
       socketRef.current = null;
       setConnected(false);
+      setForceUpdate((v) => v + 1);
     };
   }, [isAuth]);
 

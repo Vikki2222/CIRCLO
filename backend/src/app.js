@@ -64,8 +64,9 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/meetups', meetupRoutes);
 
 
-// --- 404 handler ---
+// --- 404 handler (exclude socket.io) ---
 app.all('*', (req, res, next) => {
+  if (req.path.startsWith('/socket.io')) return next();
   next(new AppError(`Route ${req.originalUrl} not found`, 404));
 });
 

@@ -4,9 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import { getMessagesApi } from '../api/chat.api';
 import styles from './ChatDrawer.module.css';
 
+const formatTime = (d) =>
+  new Date(d).toLocaleTimeString('en-IN', {
+    hour: '2-digit', minute: '2-digit',
+  });
+
 const ChatDrawer = ({ meetup, onClose }) => {
-  const { socket }  = useSocket();
-  const { user }    = useAuth();
+  const { socket } = useSocket();
+  const { user }   = useAuth();
 
   const [messages, setMessages] = useState([]);
   const [text, setText]         = useState('');
@@ -20,10 +25,11 @@ const ChatDrawer = ({ meetup, onClose }) => {
 
     setLoading(true);
     setError('');
+    setMessages([]);
+
     getMessagesApi(meetup._id)
       .then((res) => setMessages(res.data.data.messages || []))
       .catch((err) => {
-        console.log('Chat error:', err.response?.status, err.response?.data);
         if (err.response?.status !== 404) {
           setError('Failed to load messages.');
         }
@@ -33,11 +39,18 @@ const ChatDrawer = ({ meetup, onClose }) => {
 
   // ── Socket: receive messages ───────────────────────────────
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !meetup?._id) return;
 
     const handleMessage = (msg) => {
+      // Ignore messages from other meetup rooms
       if (msg.meetupId !== meetup._id) return;
-      setMessages((prev) => [...prev, msg]);
+
+      setMessages((prev) => {
+        // Prevent duplicates by checking _id
+        const alreadyExists = prev.some((m) => m._id === msg._id);
+        if (alreadyExists) return prev;
+        return [...prev, msg];
+      });
     };
 
     const handleError = ({ message }) => setError(message);
@@ -49,14 +62,14 @@ const ChatDrawer = ({ meetup, onClose }) => {
       socket.off('chat:message', handleMessage);
       socket.off('chat:error',   handleError);
     };
-  }, [socket, meetup._id]);
+  }, [socket, meetup?._id]);
 
   // ── Auto-scroll to bottom ──────────────────────────────────
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ── Send message ───────────────────────────────────────────
+  // ── Send — just emit, socket broadcast adds it for everyone ─
   const handleSend = useCallback(() => {
     if (!text.trim() || !socket) return;
 
@@ -74,11 +87,6 @@ const ChatDrawer = ({ meetup, onClose }) => {
       handleSend();
     }
   };
-
-  const formatTime = (d) =>
-    new Date(d).toLocaleTimeString('en-IN', {
-      hour: '2-digit', minute: '2-digit',
-    });
 
   const isOwn = (msg) =>
     (msg.sender?._id || msg.sender) === user?._id;
@@ -130,7 +138,6 @@ const ChatDrawer = ({ meetup, onClose }) => {
               key={msg._id || i}
               className={`${styles.msgRow} ${own ? styles.ownRow : ''}`}
             >
-              {/* Avatar — other users only */}
               {!own && (
                 <div className={styles.avatar}>
                   {showSender

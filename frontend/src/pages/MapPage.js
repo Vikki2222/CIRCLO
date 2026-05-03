@@ -10,14 +10,15 @@ import '../utils/leafletIcons';
 import { createUserIcon } from '../utils/leafletIcons';
 import styles from './MapPage.module.css';
 
-// Listens to map click — used for future "create meetup here" flow
 const MapClickHandler = ({ onClick }) => {
   useMapEvents({ click: (e) => onClick(e.latlng) });
   return null;
 };
 
-const DEFAULT_CENTER = [12.9716, 77.5946]; // Bangalore fallback
+const DEFAULT_CENTER = [12.9716, 77.5946];
 const DEFAULT_ZOOM   = 14;
+
+
 
 const MapPage = () => {
   const { user, logout }    = useAuth();
@@ -28,18 +29,19 @@ const MapPage = () => {
   const [mapCenter, setMapCenter]   = useState(DEFAULT_CENTER);
   const [selectedMeetup, setSelectedMeetup] = useState(null);
   const [locating, setLocating]     = useState(true);
+  const [radius, setRadius]         = useState(10);
+  
 
   const { meetups, loading, updateMeetup, removeMeetup, refetch } =
-    useNearbyMeetups(userCoords);
+    useNearbyMeetups(userCoords, radius);
 
-  // ── Get user location on mount ──────────────────────────────
+  // Get user location
   useEffect(() => {
     if (!navigator.geolocation) {
       setLocating(false);
       setUserCoords({ lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] });
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         const pos = { lat: coords.latitude, lng: coords.longitude };
@@ -48,7 +50,6 @@ const MapPage = () => {
         setLocating(false);
       },
       () => {
-        // Permission denied — use default
         setUserCoords({ lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] });
         setLocating(false);
       },
@@ -56,38 +57,34 @@ const MapPage = () => {
     );
   }, []);
 
-  // ── Socket.io — real-time pin updates ───────────────────────
+  // Socket events
   useEffect(() => {
     if (!socket) return;
 
-    // 🟢 Someone joined — update count
     socket.on('meetup:attendee_update', ({ meetupId, status, attendeeCount, spotsLeft }) => {
-      updateMeetup(meetupId, { status, attendeeCount: attendeeCount, spotsLeft });
-      if (selectedMeetup?._id === meetupId) {
-        setSelectedMeetup((prev) => prev ? { ...prev, status, spotsLeft } : prev);
-      }
+      updateMeetup(meetupId, { status, attendeeCount, spotsLeft });
+      setSelectedMeetup((prev) =>
+        prev?._id === meetupId ? { ...prev, status, attendeeCount, spotsLeft } : prev
+      );
     });
 
-    // 🔴 Meetup went full — pin turns red
     socket.on('meetup:full', ({ meetupId, attendeeCount }) => {
       updateMeetup(meetupId, { status: 'full', spotsLeft: 0, attendeeCount });
-      if (selectedMeetup?._id === meetupId) {
-        setSelectedMeetup((prev) => prev ? { ...prev, status: 'full', spotsLeft: 0 } : prev);
-      }
+      setSelectedMeetup((prev) =>
+        prev?._id === meetupId ? { ...prev, status: 'full', spotsLeft: 0, attendeeCount } : prev
+      );
     });
 
-    // 🟢 Spot opened up — pin turns green
     socket.on('meetup:reopened', ({ meetupId, attendeeCount, spotsLeft }) => {
       updateMeetup(meetupId, { status: 'active', attendeeCount, spotsLeft });
-      if (selectedMeetup?._id === meetupId) {
-        setSelectedMeetup((prev) => prev ? { ...prev, status: 'active', spotsLeft } : prev);
-      }
+      setSelectedMeetup((prev) =>
+        prev?._id === meetupId ? { ...prev, status: 'active', attendeeCount, spotsLeft } : prev
+      );
     });
 
-    // ✕ Meetup cancelled — remove pin
     socket.on('meetup:cancelled', ({ meetupId }) => {
       removeMeetup(meetupId);
-      if (selectedMeetup?._id === meetupId) setSelectedMeetup(null);
+      setSelectedMeetup((prev) => prev?._id === meetupId ? null : prev);
     });
 
     return () => {
@@ -96,11 +93,15 @@ const MapPage = () => {
       socket.off('meetup:reopened');
       socket.off('meetup:cancelled');
     };
-  }, [socket, selectedMeetup, updateMeetup, removeMeetup]);
+  }, [socket, updateMeetup, removeMeetup]);
 
-  // ── Handlers ─────────────────────────────────────────────────
   const handlePinClick = useCallback((meetup) => {
-    setSelectedMeetup(meetup);
+    const normalized = {
+      ...meetup,
+      attendeeCount: meetup.attendeeCount ?? meetup.attendees?.length ?? 0,
+      spotsLeft:     meetup.spotsLeft ?? (meetup.capacity - (meetup.attendeeCount ?? meetup.attendees?.length ?? 0)),
+    };
+    setSelectedMeetup(normalized);
     if (socket) socket.emit('meetup:join_room', meetup._id);
   }, [socket]);
 
@@ -112,23 +113,22 @@ const MapPage = () => {
   }, [socket, selectedMeetup]);
 
   const handleJoinLeave = useCallback((meetupId, action) => {
-    // Optimistic update + refetch for accurate data
     refetch();
-    if (selectedMeetup?._id === meetupId) {
-      setSelectedMeetup((prev) => {
-        if (!prev) return prev;
-        const delta       = action === 'join' ? 1 : -1;
-        const newCount    = (prev.attendeeCount ?? 0) + delta;
-        const newSpots    = prev.capacity - newCount;
-        return {
-          ...prev,
-          attendeeCount: newCount,
-          spotsLeft: newSpots,
-          status: newSpots <= 0 ? 'full' : 'active',
-        };
-      });
-    }
-  }, [selectedMeetup, refetch]);
+    setSelectedMeetup((prev) => {
+      if (!prev || prev._id !== meetupId) return prev;
+      const current  = typeof prev.attendeeCount === 'number'
+        ? prev.attendeeCount
+        : (prev.attendees?.length ?? 0);
+      const newCount = action === 'join' ? current + 1 : current - 1;
+      const newSpots = prev.capacity - newCount;
+      return {
+        ...prev,
+        attendeeCount: newCount,
+        spotsLeft:     newSpots,
+        status:        newSpots <= 0 ? 'full' : 'active',
+      };
+    });
+  }, [refetch]);
 
   if (locating) {
     return (
@@ -142,21 +142,16 @@ const MapPage = () => {
   return (
     <div className={styles.wrapper}>
 
-      {/* ── Navbar ─────────────────────────────────────────── */}
+      {/* Navbar */}
       <nav className={styles.navbar}>
         <div className={styles.navLogo}>
           <span className={styles.navLogoIcon}>◎</span>
           <span>circlo</span>
         </div>
-
         <div className={styles.navActions}>
-          <button
-            className={styles.createBtn}
-            onClick={() => navigate('/create')}
-          >
+          <button className={styles.createBtn} onClick={() => navigate('/create')}>
             + Create
           </button>
-
           <div className={styles.userMenu}>
             <div className={styles.userAvatar}>
               {user?.avatar
@@ -171,21 +166,47 @@ const MapPage = () => {
         </div>
       </nav>
 
-      {/* ── Loading indicator ──────────────────────────────── */}
+      {/* Loading bar */}
       {loading && (
-        <div className={styles.loadingBar}>
-          Loading meetups...
-        </div>
+        <div className={styles.loadingBar}>Loading meetups...</div>
       )}
 
-      {/* ── Meetup count badge ─────────────────────────────── */}
+      {/* Count badge */}
       {!loading && (
         <div className={styles.countBadge}>
-          {meetups.length} meetup{meetups.length !== 1 ? 's' : ''} nearby
+          {meetups.length} meetup{meetups.length !== 1 ? 's' : ''} within {radius}km
         </div>
       )}
 
-      {/* ── Map ────────────────────────────────────────────── */}
+     {/* ── Radius slider ─────────────────────────────────── */}
+<div className={styles.radiusWrapper}>
+  <div className={styles.radiusSliderBox}>
+    <span className={styles.radiusIcon}>📍</span>
+    <input
+      type="range"
+      min={1}
+      max={50}
+      step={1}
+      value={radius}
+      onChange={(e) => setRadius(Number(e.target.value))}
+      onMouseUp={() => refetch(true)}
+      onTouchEnd={() => refetch(true)}
+      className={styles.radiusSlider}
+    />
+    <span className={styles.radiusValue}>{radius}km</span>
+  </div>
+</div>
+
+      {/* Refresh button */}
+      <button
+        className={styles.refreshBtn}
+        onClick={() => refetch(false)}
+        title="Refresh meetups"
+      >
+        ↻
+      </button>
+
+      {/* Map */}
       <MapContainer
         center={mapCenter}
         zoom={DEFAULT_ZOOM}
@@ -196,10 +217,8 @@ const MapPage = () => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-
         <MapClickHandler onClick={() => {}} />
 
-        {/* User location pin */}
         {userCoords && (
           <Marker
             position={[userCoords.lat, userCoords.lng]}
@@ -207,7 +226,6 @@ const MapPage = () => {
           />
         )}
 
-        {/* Meetup pins */}
         {meetups.map((meetup) => (
           <MeetupPin
             key={meetup._id}
@@ -217,7 +235,7 @@ const MapPage = () => {
         ))}
       </MapContainer>
 
-      {/* ── Meetup detail panel ────────────────────────────── */}
+      {/* Meetup panel */}
       {selectedMeetup && (
         <MeetupPanel
           meetup={selectedMeetup}
