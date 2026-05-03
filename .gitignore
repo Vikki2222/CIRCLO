@@ -3,3 +3,5 @@ backend/node_modules/
 .env
 dist
 build
+.env
+backend/.env

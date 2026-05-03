@@ -1,0 +1,230 @@
+.panel {
+    position: absolute;
+    top: 70px;
+    right: 16px;
+    width: 320px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    z-index: 1000;
+    overflow: hidden;
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn {
+    from { transform: translateX(20px); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
+  
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1rem 0;
+  }
+  
+  .badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 99px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #334155;
+    color: #94a3b8;
+  }
+  .sports  { background: rgba(34,197,94,0.15);  color: #22c55e; }
+  .music   { background: rgba(168,85,247,0.15); color: #a855f7; }
+  .food    { background: rgba(251,146,60,0.15); color: #fb923c; }
+  .tech    { background: rgba(79,142,247,0.15); color: #4f8ef7; }
+  .social  { background: rgba(236,72,153,0.15); color: #ec4899; }
+  .outdoor { background: rgba(34,211,238,0.15); color: #22d3ee; }
+  .other   { background: #334155; color: #94a3b8; }
+  
+  .closeBtn {
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+  }
+  .closeBtn:hover { background: #334155; color: #f1f5f9; }
+  
+  .content { padding: 0.75rem 1rem 1rem; }
+  
+  .title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+  }
+  
+  .description {
+    font-size: 0.875rem;
+    color: #94a3b8;
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+  }
+  
+  .stats {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 0.75rem;
+  }
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.875rem;
+    color: #cbd5e1;
+  }
+  .statIcon { font-size: 0.9rem; }
+  .statLabel { color: #94a3b8; }
+  
+  /* Capacity bar */
+  .capacityBar {
+    height: 4px;
+    background: #334155;
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .capacityFill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.4s ease, background 0.4s ease;
+  }
+  .spotsLabel {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Tags */
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 0.75rem;
+  }
+  .tag {
+    font-size: 0.75rem;
+    color: #64748b;
+    background: #0f172a;
+    padding: 2px 8px;
+    border-radius: 99px;
+    border: 1px solid #334155;
+  }
+  
+  /* Host */
+  .host {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.75rem;
+    background: #0f172a;
+    border-radius: 10px;
+  }
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: #334155;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: #f1f5f9; font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .hostLabel { font-size: 0.72rem; color: #64748b; }
+  .hostName  { font-size: 0.875rem; font-weight: 600; color: #f1f5f9; }
+  
+  .error {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #fca5a5;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Actions */
+  .actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .directionsBtn {
+    flex: 1;
+    background: #0f172a;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    padding: 0.6rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .directionsBtn:hover { border-color: #4f8ef7; color: #4f8ef7; }
+  
+  .joinBtn {
+    flex: 1;
+    background: #22c55e;
+    border: none;
+    color: #fff;
+    padding: 0.6rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .joinBtn:hover:not(:disabled) { background: #16a34a; }
+  
+  .leaveBtn {
+    flex: 1;
+    background: transparent;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    padding: 0.6rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .leaveBtn:hover { background: rgba(239,68,68,0.1); }
+  
+  .disabled { background: #334155 !important; cursor: not-allowed; }
+  
+  .hostBadge {
+    flex: 1;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #4f8ef7;
+    font-weight: 600;
+    padding: 0.6rem;
+    background: rgba(79,142,247,0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(79,142,247,0.2);
+  }
+
+  .chatBtn {
+    flex: 1;
+    background: transparent;
+    border: 1px solid #4f8ef7;
+    color: #4f8ef7;
+    padding: 0.6rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .chatBtn:hover { background: rgba(79,142,247,0.1); }

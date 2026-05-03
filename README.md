@@ -137,8 +137,7 @@ cd ../server && node server.js
 MIT License - view LICENSE for full details
 
 ## Contributors
-- [Your Name] - Project creator and maintainer
-- [Other Contributors] - List of contributors
+ME
 
 ## Status
 The project is under active development with current focus on:

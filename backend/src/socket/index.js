@@ -2,6 +2,7 @@ const { Server } = require('socket.io');
 const { verifyToken } = require('../utils/jwt');
 const User = require('../models/User');
 const logger = require('../utils/logger');
+const chatService = require('../services/chat.service');
 
 /**
  * Attaches Socket.io to the HTTP server.
@@ -72,6 +73,42 @@ const initSocket = (httpServer) => {
       if (!meetupId) return;
       socket.leave(`meetup:${meetupId}`);
       logger.debug(`${socket.user.name} left room meetup:${meetupId}`);
+    });
+
+    /**
+     * Client sends a chat message.
+     * We save it, then broadcast to the meetup room.
+     */
+    socket.on('chat:message', async ({ meetupId, text }) => {
+      try {
+        if (!meetupId || !text?.trim()) return;
+
+        // Only attendees can chat — check room membership
+        const rooms = Array.from(socket.rooms);
+        if (!rooms.includes(`meetup:${meetupId}`)) {
+          socket.emit('chat:error', { message: 'Join the meetup room first.' });
+          return;
+        }
+
+        const message = await chatService.saveMessage({
+          meetupId,
+          senderId: socket.user._id,
+          text,
+        });
+
+        // Broadcast to everyone in the room (including sender)
+        io.to(`meetup:${meetupId}`).emit('chat:message', {
+          _id:       message._id,
+          text:      message.text,
+          sender:    message.sender,
+          meetupId,
+          createdAt: message.createdAt,
+        });
+
+      } catch (err) {
+        logger.error(`Chat error: ${err.message}`);
+        socket.emit('chat:error', { message: 'Failed to send message.' });
+      }
     });
 
     // ── Chat events ───────────────────────────────────────────
