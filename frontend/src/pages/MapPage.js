@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,7 @@ import MeetupPanel from '../components/MeetupPanel';
 import '../utils/leafletIcons';
 import { createUserIcon } from '../utils/leafletIcons';
 import styles from './MapPage.module.css';
+
 
 const MapClickHandler = ({ onClick }) => {
   useMapEvents({ click: (e) => onClick(e.latlng) });
@@ -30,6 +31,7 @@ const MapPage = () => {
   const [selectedMeetup, setSelectedMeetup] = useState(null);
   const [locating, setLocating]     = useState(true);
   const [radius, setRadius]         = useState(10);
+  const radiusDebounceRef = useRef(null);
   
 
   const { meetups, loading, updateMeetup, removeMeetup, refetch } =
@@ -188,15 +190,21 @@ const MapPage = () => {
       max={50}
       step={1}
       value={radius}
-      onChange={(e) => setRadius(Number(e.target.value))}
-      onMouseUp={() => refetch(true)}
-      onTouchEnd={() => refetch(true)}
+      onChange={(e) => {
+        const val = Number(e.target.value);
+        setRadius(val); // update display immediately
+
+        // Debounce the API call — only fetch 500ms after user stops dragging
+        clearTimeout(radiusDebounceRef.current);
+        radiusDebounceRef.current = setTimeout(() => {
+          refetch(true);
+        }, 500);
+      }}
       className={styles.radiusSlider}
     />
     <span className={styles.radiusValue}>{radius}km</span>
   </div>
 </div>
-
       {/* Refresh button */}
       <button
         className={styles.refreshBtn}
