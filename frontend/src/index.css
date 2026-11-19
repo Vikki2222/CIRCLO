@@ -1,13 +1,124 @@
+/* ───────────────────────────────────────────────────────────
+   Sidequest — shared theme (pixel / retro-terminal)
+   Near-black grid, lime + red accents, square corners,
+   hard shadows. Pages use these tokens via var(--sq-*).
+   ─────────────────────────────────────────────────────────── */
+
+:root {
+  --sq-bg: #111111;
+  --sq-bg-2: #161616;
+  --sq-panel: #1b1b1b;
+  --sq-panel-2: #232323;
+  --sq-line: #2a2a2a;
+  --sq-line-strong: #3c3c3c;
+  --sq-text: #efeee6;
+  --sq-muted: #8f8e85;
+  --sq-faint: #5f5e57;
+  --sq-lime: #c4f25e;
+  --sq-on-lime: #111111;
+  --sq-red: #ff4b3e;
+  --sq-amber: #f2c14e;
+  --sq-shadow: 4px 4px 0 #000;
+
+  --sq-pixel: 'Silkscreen', 'Courier New', monospace;          /* logo, small labels */
+  --sq-display: 'Space Mono', ui-monospace, Menlo, monospace;  /* headings */
+  --sq-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'Inter', Arial, sans-serif;
-  background: #0f172a;
-  color: #f1f5f9;
+  font-family: var(--sq-mono);
+  background: var(--sq-bg);
+  color: var(--sq-text);
   -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--sq-lime); color: var(--sq-on-lime); }
+:focus-visible { outline: 2px dashed var(--sq-lime); outline-offset: 2px; }
+
+/* Grid backdrop used by full-page screens */
+.sq-grid-bg {
+  background:
+    linear-gradient(var(--sq-line) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, var(--sq-line) 1px, transparent 1px) 0 0 / 48px 48px,
+    var(--sq-bg);
+}
+
+/* Brand mark */
+.sq-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--sq-pixel);
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  color: var(--sq-text);
+  text-decoration: none;
+}
+.sq-brand svg { width: 18px; height: 18px; color: var(--sq-lime); fill: currentColor; }
+
+/* Pixel icon default size */
+.sq-icon { width: 16px; height: 16px; fill: currentColor; flex: none; display: inline-block; }
+
+/* Full-screen loading state */
+.sq-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-family: var(--sq-pixel);
+  font-size: 1rem;
+  text-transform: uppercase;
+  color: var(--sq-lime);
+}
+.sq-loading::after {
+  content: '';
+  width: 0.6em;
+  height: 1em;
+  background: var(--sq-red);
+  animation: sq-blink 1s steps(1) infinite;
+}
+@keyframes sq-blink { 50% { opacity: 0; } }
+
+/* ── Leaflet, themed ─────────────────────────────────────── */
+
+/* Map tiles are recoloured to the earth palette in components/EarthTileLayer.js */
+.leaflet-container { background: var(--sq-bg-2); font-family: var(--sq-mono); }
+
+.leaflet-tooltip.sq-tooltip {
+  background: var(--sq-panel);
+  color: var(--sq-text);
+  border: 2px solid var(--sq-line-strong);
+  border-radius: 0;
+  box-shadow: var(--sq-shadow);
+  font-family: var(--sq-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  padding: 6px 8px;
+}
+.leaflet-tooltip.sq-tooltip::before { display: none; }
+
+.leaflet-control-attribution {
+  background: rgba(17, 17, 17, 0.85) !important;
+  color: var(--sq-muted) !important;
+  font-family: var(--sq-mono);
+}
+.leaflet-control-attribution a { color: var(--sq-lime) !important; }
+.leaflet-bar a {
+  background: var(--sq-panel) !important;
+  color: var(--sq-text) !important;
+  border-radius: 0 !important;
+  border-color: var(--sq-line-strong) !important;
 }
 
 /* Leaflet pin fix — icons break with webpack */
 .leaflet-default-icon-path {
   background-image: url(https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sq-loading::after { animation: none; }
 }

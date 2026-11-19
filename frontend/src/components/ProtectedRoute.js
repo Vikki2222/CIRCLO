@@ -7,16 +7,7 @@ const ProtectedRoute = ({ children }) => {
 
   // Don't redirect until we know auth state (avoids flash)
   if (loading) {
-    return (
-      <div style={{
-        height: '100vh', display: 'flex',
-        alignItems: 'center', justifyContent: 'center',
-        background: '#0f172a', color: '#4f8ef7',
-        fontSize: '1.2rem', fontFamily: 'Arial'
-      }}>
-        Loading...
-      </div>
-    );
+    return <div className="sq-loading sq-grid-bg">Loading</div>;
   }
 
   if (!isAuth) {
