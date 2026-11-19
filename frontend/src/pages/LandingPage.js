@@ -613,6 +613,15 @@ const LandingPage = () => {
         {/* ── How it works (lime band, sticky) ──────────── */}
         <section id="how" className={styles.band}>
           <div className={styles.how}>
+            {/* Background: a dashed route that links the three steps */}
+            <div className={styles.route} aria-hidden="true">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path d="M50 2 V26 H48.8 V58 H51.2 V98" />
+              </svg>
+              {[[50, 18], [48.8, 50], [51.2, 84]].map(([x, y], i) => (
+                <span key={i} className={i <= step ? styles.routeOn : ''} style={{ left: `${x}%`, top: `${y}%` }} />
+              ))}
+            </div>
             <div className={styles.howSticky}>
               <p className={styles.kicker}>How it works ✦</p>
               <h2 className={styles.h2}>Three taps<span className={styles.slash}>/</span> then go.</h2>
