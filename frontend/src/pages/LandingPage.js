@@ -545,6 +545,7 @@ const LandingPage = () => {
     <div ref={rootRef} className={styles.page}>
       <div className={styles.progress} aria-hidden="true" />
       <div className={styles.scanlines} aria-hidden="true" />
+      <PixelEarth />
       <a href="#main" className={styles.skip}>Skip to content</a>
 
       {/* ── Nav ─────────────────────────────────────────── */}
@@ -573,7 +574,6 @@ const LandingPage = () => {
       <main id="main">
         {/* ── Hero ──────────────────────────────────────── */}
         <section className={styles.hero}>
-          <PixelEarth />
           <div className={styles.heroBar} data-reveal>
             <span>Nearby <b aria-hidden="true">✦✦✦</b></span>
             <span className={styles.heroBarRight}>If it’s happening within 10 km,<br />it’s on the map.</span>
