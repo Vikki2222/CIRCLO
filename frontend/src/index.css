@@ -85,8 +85,9 @@ body {
 
 /* ── Leaflet, themed ─────────────────────────────────────── */
 
-/* Map tiles in a dark, desaturated style that matches the theme */
-.sq-tiles { filter: grayscale(1) invert(1) brightness(0.78) contrast(0.92) sepia(0.18); }
+/* Map tiles in warm earth tones: sandy land, green parks, teal water,
+   dimmed slightly so the lime/red pins stay the brightest things on screen */
+.sq-tiles { filter: sepia(0.3) saturate(1.6) hue-rotate(-10deg) brightness(0.76) contrast(1.12); }
 .leaflet-container { background: var(--sq-bg-2); font-family: var(--sq-mono); }
 
 .leaflet-tooltip.sq-tooltip {
