@@ -53,22 +53,22 @@ const sendErrorProd = (err, res) => {
 // --- Global error middleware (must have 4 params) ---
 
 const errorHandler = (err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || 'error';
-
-  if (process.env.NODE_ENV === 'development') {
-    logger.error(`${err.statusCode} ${err.message}`);
-    return sendErrorDev(err, res);
-  }
-
-  // Transform known error types in production
-  let error = Object.assign(Object.create(Object.getPrototypeOf(err)), err);
-
-  if (err.name === 'CastError') error = handleCastErrorDB(error);
-  if (err.code === 11000) error = handleDuplicateFieldsDB(error);
-  if (err.name === 'ValidationError') error = handleValidationErrorDB(error);
+  // Transform known error types (in every environment, so status codes
+  // are the same in dev and prod)
+  let error = err;
+  if (err.name === 'CastError') error = handleCastErrorDB(err);
+  if (err.code === 11000) error = handleDuplicateFieldsDB(err);
+  if (err.name === 'ValidationError') error = handleValidationErrorDB(err);
   if (err.name === 'JsonWebTokenError') error = handleJWTError();
   if (err.name === 'TokenExpiredError') error = handleJWTExpiredError();
+
+  error.statusCode = error.statusCode || 500;
+  error.status = error.status || 'error';
+
+  if (process.env.NODE_ENV === 'development') {
+    logger.error(`${error.statusCode} ${error.message}`);
+    return sendErrorDev(error, res);
+  }
 
   sendErrorProd(error, res);
 };
