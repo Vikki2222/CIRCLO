@@ -13,32 +13,38 @@ import { EARTH } from '../utils/earthPalette';
 const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
+// Blend two palette colours: t = 0 gives a, t = 1 gives b
+const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+
 // Each kind of map feature gets its own ramp through the earth palette.
-// Brightness from the original tile picks the point on the ramp, so text,
-// outlines and antialiasing stay readable. Stops: [luminance, [r, g, b]].
+// Brightness from the original tile picks the point on the ramp, so text
+// and outlines stay readable. The ramps are kept narrow on purpose: land
+// and buildings sit close together and colours are softened, so the map
+// reads as calm background and the pins stand out.
+// Stops: [luminance, [r, g, b]].
+const SOFT_LAND = mix(EARTH.dry, EARTH.sand, 0.12);
 const RAMPS = {
   land: [            // land, buildings, rails, labels and their halos
-    [0,   [26, 26, 20]],
-    [140, EARTH.rock],
-    [242, EARTH.dry],
-    [255, EARTH.sand],
+    [0,   [52, 46, 36]],                      // label text: dark, not black
+    [150, mix(EARTH.rock, EARTH.dry, 0.5)],
+    [205, mix(SOFT_LAND, EARTH.rock, 0.12)],  // buildings: barely darker than land
+    [242, SOFT_LAND],                         // base land
+    [255, mix(EARTH.sand, EARTH.snow, 0.08)], // minor roads and label halos
   ],
   green: [           // parks, grass, woods
-    [140, EARTH.jungle],
-    [190, EARTH.forest],
-    [235, EARTH.grass],
-    [255, [140, 172, 96]],
+    [140, mix(EARTH.jungle, SOFT_LAND, 0.25)],
+    [200, mix(EARTH.forest, SOFT_LAND, 0.3)],
+    [255, mix(EARTH.grass, SOFT_LAND, 0.3)],
   ],
   water: [
-    [110, EARTH.deep],
-    [175, EARTH.ocean],
-    [215, EARTH.shallow],
-    [255, EARTH.air],
+    [110, mix(EARTH.ocean, SOFT_LAND, 0.15)],
+    [200, mix(EARTH.shallow, SOFT_LAND, 0.2)],
+    [255, mix(EARTH.shallow, EARTH.air, 0.4)],
   ],
   road: [            // coloured main roads
-    [120, EARTH.rock],
-    [200, EARTH.sand],
-    [255, [222, 206, 158]],
+    [150, SOFT_LAND],
+    [215, mix(EARTH.sand, EARTH.snow, 0.08)],
+    [255, mix(EARTH.sand, EARTH.snow, 0.25)],
   ],
 };
 
