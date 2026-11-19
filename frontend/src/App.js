@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -9,8 +9,15 @@ import RegisterPage     from './pages/RegisterPage';
 import MapPage          from './pages/MapPage';
 import CreateMeetupPage from './pages/CreateMeetupPage';
 import AuthCallback     from './pages/AuthCallback';
+import LandingPage      from './pages/LandingPage';
 
 
+// "/" shows the landing page to visitors and the map to signed-in users
+const Home = () => {
+  const { isAuth, loading } = useAuth();
+  if (!loading && !isAuth) return <LandingPage />;
+  return <ProtectedRoute><MapPage /></ProtectedRoute>;
+};
 
 function App() {
   return (
@@ -24,9 +31,7 @@ function App() {
             <Route path="/auth/callback"   element={<AuthCallback />} />
 
             {/* Protected */}
-            <Route path="/" element={
-              <ProtectedRoute><MapPage /></ProtectedRoute>
-            } />
+            <Route path="/" element={<Home />} />
             <Route path="/create" element={
               <ProtectedRoute><CreateMeetupPage /></ProtectedRoute>
             } />
