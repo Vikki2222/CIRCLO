@@ -199,6 +199,162 @@ const FAQ = [
 ];
 
 // ─────────────────────────────────────────────────────────────
+// Background — a slowly turning, pixelated half Earth
+// ─────────────────────────────────────────────────────────────
+
+const EARTH_W = 192;           // canvas pixels (scaled up with crisp edges)
+const EARTH_H = 96;            // only the top half of the globe is drawn
+const EARTH_R = 94;
+
+// Small 3D value noise so continents wrap naturally around the sphere
+const hash3 = (x, y, z, seed) => {
+  let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 1440670441) ^ Math.imul(seed, 144269504);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+};
+const smooth = (t) => t * t * (3 - 2 * t);
+const valueNoise = (x, y, z, seed) => {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  const xf = smooth(x - xi), yf = smooth(y - yi), zf = smooth(z - zi);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const c = (dx, dy, dz) => hash3(xi + dx, yi + dy, zi + dz, seed);
+  return lerp(
+    lerp(lerp(c(0, 0, 0), c(1, 0, 0), xf), lerp(c(0, 1, 0), c(1, 1, 0), xf), yf),
+    lerp(lerp(c(0, 0, 1), c(1, 0, 1), xf), lerp(c(0, 1, 1), c(1, 1, 1), xf), yf),
+    zf
+  );
+};
+const fbm = (x, y, z, seed) => {
+  let sum = 0, amp = 0.5, f = 1;
+  for (let o = 0; o < 4; o++) {
+    sum += amp * valueNoise(x * f, y * f, z * f, seed + o);
+    amp *= 0.5;
+    f *= 2.03;
+  }
+  return sum / 0.9375;
+};
+
+// Earth palette (muted, natural)
+const C = {
+  deep:    [24, 52, 74],
+  ocean:   [34, 74, 98],
+  shallow: [58, 108, 124],
+  sand:    [196, 178, 124],
+  grass:   [108, 146, 70],
+  forest:  [62, 104, 48],
+  jungle:  [44, 80, 38],
+  dry:     [150, 124, 78],
+  rock:    [112, 92, 68],
+  snow:    [232, 236, 228],
+  cloud:   [242, 242, 234],
+  night:   [10, 12, 14],
+  air:     [120, 160, 170],
+};
+
+const LIGHT = (() => { const v = [-0.55, -0.55, 0.63]; const m = Math.hypot(...v); return v.map((n) => n / m); })();
+
+const paintEarth = (ctx, img, rot) => {
+  const data = img.data;
+  const cx = EARTH_W / 2 - 0.5;
+  const cy = EARTH_H;               // centre sits on the bottom edge
+  const cos = Math.cos(rot), sin = Math.sin(rot);
+  const cloudRot = rot * 1.35;
+  const cc = Math.cos(cloudRot), cs = Math.sin(cloudRot);
+
+  for (let y = 0; y < EARTH_H; y++) {
+    for (let x = 0; x < EARTH_W; x++) {
+      const i = (y * EARTH_W + x) * 4;
+      const dx = (x - cx) / EARTH_R;
+      const dy = (y - cy) / EARTH_R;
+      const d2 = dx * dx + dy * dy;
+
+      // Atmosphere: a 2-pixel dithered rim
+      if (d2 > 1) {
+        const dist = Math.sqrt(d2) * EARTH_R - EARTH_R;
+        if (dist < 2.2 && (x + y) % 2 === 0) {
+          data[i] = C.air[0]; data[i + 1] = C.air[1]; data[i + 2] = C.air[2]; data[i + 3] = 90;
+        } else {
+          data[i + 3] = 0;
+        }
+        continue;
+      }
+
+      // Sphere normal, then spin around the vertical axis
+      const nx = dx, ny = dy, nz = Math.sqrt(1 - d2);
+      const rx = nx * cos + nz * sin;
+      const rz = -nx * sin + nz * cos;
+
+      const h = fbm(rx * 1.7 + 10, ny * 1.7 + 10, rz * 1.7 + 10, 7);
+      const lat = Math.abs(ny);
+      const ice = lat + (fbm(rx * 4, ny * 4, rz * 4, 31) - 0.5) * 0.12 > 0.95;
+
+      let col;
+      if (ice) col = C.snow;
+      else if (h < 0.47) col = h < 0.4 ? C.deep : C.ocean;
+      else if (h < 0.5) col = C.shallow;
+      else if (h < 0.52) col = C.sand;
+      else {
+        const wet = fbm(rx * 3 + 50, ny * 3, rz * 3, 19);
+        if (h > 0.66) col = h > 0.74 ? C.snow : C.rock;
+        else if (lat < 0.35 && wet > 0.55) col = C.jungle;
+        else if (wet < 0.42) col = C.dry;
+        else col = h > 0.58 ? C.forest : C.grass;
+      }
+
+      // Clouds drift a little faster than the ground
+      const qx = nx * cc + nz * cs, qz = -nx * cs + nz * cc;
+      const cloud = fbm(qx * 2.6 + 90, ny * 3.2, qz * 2.6, 53);
+      if (cloud > 0.67) col = C.cloud;
+
+      // Lighting in four bands for a pixel-art look, plus a dark limb
+      const lit = Math.max(0, nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]);
+      const band = Math.min(3, Math.floor((0.2 + lit * 0.95) * 4)) / 3;
+      const shade = 0.28 + band * 0.72;
+      const mix = (a, b) => Math.round(b + (a - b) * shade);
+      data[i]     = mix(col[0], C.night[0]);
+      data[i + 1] = mix(col[1], C.night[1]);
+      data[i + 2] = mix(col[2], C.night[2]);
+      data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+};
+
+const PixelEarth = () => {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+    const img = ctx.createImageData(EARTH_W, EARTH_H);
+    let rot = 0.6;
+    paintEarth(ctx, img, rot);
+    if (prefersReducedMotion()) return;
+
+    // Turn slowly, redrawing at a low frame rate for a retro feel.
+    // Pause while the hero is off screen.
+    let timer = 0;
+    const start = () => {
+      if (timer) return;
+      timer = setInterval(() => { rot += 0.012; paintEarth(ctx, img, rot); }, 120);
+    };
+    const stop = () => { clearInterval(timer); timer = 0; };
+    const io = 'IntersectionObserver' in window
+      ? new IntersectionObserver(([e]) => (e.isIntersecting ? start() : stop()))
+      : null;
+    if (io) io.observe(canvas); else start();
+    return () => { stop(); io?.disconnect(); };
+  }, []);
+
+  return (
+    <div className={styles.earth} aria-hidden="true">
+      <canvas ref={ref} width={EARTH_W} height={EARTH_H} className={styles.earthCanvas} />
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
 // Hero scene — a pixel-art neighbourhood map in layers
 // ─────────────────────────────────────────────────────────────
 
@@ -417,6 +573,7 @@ const LandingPage = () => {
       <main id="main">
         {/* ── Hero ──────────────────────────────────────── */}
         <section className={styles.hero}>
+          <PixelEarth />
           <div className={styles.heroBar} data-reveal>
             <span>Nearby <b aria-hidden="true">✦✦✦</b></span>
             <span className={styles.heroBarRight}>If it’s happening within 10 km,<br />it’s on the map.</span>
