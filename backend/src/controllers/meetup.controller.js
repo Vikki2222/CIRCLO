@@ -23,8 +23,14 @@ const createMeetup = catchAsync(async (req, res) => {
 const getNearbyMeetups = catchAsync(async (req, res) => {
   const { lng, lat, radius, category, page, limit } = req.query;
 
-  if (!lng || !lat) {
-    throw new AppError('Please provide lng and lat query parameters.', 400);
+  const lngNum = Number(lng);
+  const latNum = Number(lat);
+  if (
+    !lng || !lat ||
+    !Number.isFinite(lngNum) || !Number.isFinite(latNum) ||
+    Math.abs(lngNum) > 180 || Math.abs(latNum) > 90
+  ) {
+    throw new AppError('Please provide valid lng and lat query parameters.', 400);
   }
 
   const result = await meetupService.findNearbyMeetups({

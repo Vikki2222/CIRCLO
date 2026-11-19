@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import useNearbyMeetups from '../hooks/useNearbyMeetups';
+import { getMeetupApi } from '../api/meetup.api';
 import MeetupPin from '../components/MeetupPin';
 import MeetupPanel from '../components/MeetupPanel';
 import '../utils/leafletIcons';
@@ -64,7 +65,7 @@ const MapPage = () => {
     socket.on('meetup:attendee_update', ({ meetupId, status, attendeeCount, spotsLeft }) => {
       updateMeetup(meetupId, { status, attendeeCount: attendeeCount, spotsLeft });
       if (selectedMeetup?._id === meetupId) {
-        setSelectedMeetup((prev) => prev ? { ...prev, status, spotsLeft } : prev);
+        setSelectedMeetup((prev) => prev ? { ...prev, status, attendeeCount, spotsLeft } : prev);
       }
     });
 
@@ -72,7 +73,7 @@ const MapPage = () => {
     socket.on('meetup:full', ({ meetupId, attendeeCount }) => {
       updateMeetup(meetupId, { status: 'full', spotsLeft: 0, attendeeCount });
       if (selectedMeetup?._id === meetupId) {
-        setSelectedMeetup((prev) => prev ? { ...prev, status: 'full', spotsLeft: 0 } : prev);
+        setSelectedMeetup((prev) => prev ? { ...prev, status: 'full', attendeeCount, spotsLeft: 0 } : prev);
       }
     });
 
@@ -80,7 +81,7 @@ const MapPage = () => {
     socket.on('meetup:reopened', ({ meetupId, attendeeCount, spotsLeft }) => {
       updateMeetup(meetupId, { status: 'active', attendeeCount, spotsLeft });
       if (selectedMeetup?._id === meetupId) {
-        setSelectedMeetup((prev) => prev ? { ...prev, status: 'active', spotsLeft } : prev);
+        setSelectedMeetup((prev) => prev ? { ...prev, status: 'active', attendeeCount, spotsLeft } : prev);
       }
     });
 
@@ -99,10 +100,23 @@ const MapPage = () => {
   }, [socket, selectedMeetup, updateMeetup, removeMeetup]);
 
   // ── Handlers ─────────────────────────────────────────────────
+  // Load full details (incl. attendees) so the panel knows
+  // whether the current user has joined
+  const loadMeetupDetails = useCallback(async (meetupId) => {
+    try {
+      const res = await getMeetupApi(meetupId);
+      const detail = res.data.data.meetup;
+      setSelectedMeetup((prev) => (prev?._id === meetupId ? detail : prev));
+    } catch {
+      // Keep the summary from the nearby list if details fail to load
+    }
+  }, []);
+
   const handlePinClick = useCallback((meetup) => {
     setSelectedMeetup(meetup);
+    loadMeetupDetails(meetup._id);
     if (socket) socket.emit('meetup:join_room', meetup._id);
-  }, [socket]);
+  }, [socket, loadMeetupDetails]);
 
   const handlePanelClose = useCallback(() => {
     if (socket && selectedMeetup) {
@@ -111,24 +125,11 @@ const MapPage = () => {
     setSelectedMeetup(null);
   }, [socket, selectedMeetup]);
 
-  const handleJoinLeave = useCallback((meetupId, action) => {
-    // Optimistic update + refetch for accurate data
+  const handleJoinLeave = useCallback((meetupId) => {
+    // Refresh the map counts and the open panel from the server
     refetch();
-    if (selectedMeetup?._id === meetupId) {
-      setSelectedMeetup((prev) => {
-        if (!prev) return prev;
-        const delta       = action === 'join' ? 1 : -1;
-        const newCount    = (prev.attendeeCount ?? 0) + delta;
-        const newSpots    = prev.capacity - newCount;
-        return {
-          ...prev,
-          attendeeCount: newCount,
-          spotsLeft: newSpots,
-          status: newSpots <= 0 ? 'full' : 'active',
-        };
-      });
-    }
-  }, [selectedMeetup, refetch]);
+    loadMeetupDetails(meetupId);
+  }, [refetch, loadMeetupDetails]);
 
   if (locating) {
     return (

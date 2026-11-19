@@ -57,10 +57,13 @@ const findNearbyMeetups = async ({ lng, lat, radiusKm = 10, category, page = 1, 
 
   // $near doesn't support .countDocuments() — get total separately
   // We use $geoWithin for the count (no sorting, just counting)
-  const [meetups, total] = await Promise.all([
+  const [docs, total] = await Promise.all([
+    // attendees is loaded so the attendeeCount / spotsLeft / isFull
+    // virtuals are correct, then stripped below (this route is public,
+    // so attendee IDs are not exposed)
     Meetup.find(filter)
       .populate('host', 'name avatar')
-      .select('-attendees -isDeleted -__v')
+      .select('-isDeleted -__v')
       .skip(skip)
       .limit(limit),
 
@@ -78,6 +81,11 @@ const findNearbyMeetups = async ({ lng, lat, radiusKm = 10, category, page = 1, 
       ...(category && { category }),
     }),
   ]);
+
+  const meetups = docs.map((doc) => {
+    const { attendees, ...rest } = doc.toJSON();
+    return rest;
+  });
 
   return {
     meetups,
