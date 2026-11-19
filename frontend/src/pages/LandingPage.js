@@ -223,6 +223,12 @@ const HeroScene = () => {
 
   return (
     <div className={styles.scene} aria-hidden="true">
+      {/* Window chrome */}
+      <div className={styles.titlebar}>
+        <span className={styles.lights}><i /><i /><i /></span>
+        <span className={styles.titleText}>Nearby · 10 km</span>
+      </div>
+
       {/* Layer 0: street grid */}
       <svg className={`${styles.layer} ${styles.depth0}`} viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
         <defs>
@@ -263,7 +269,7 @@ const HeroScene = () => {
           <div className={styles.bar}><span style={{ width: `${(joined / 8) * 100}%` }} /></div>
           <div className={styles.mcMeta}>
             <span className={styles.avatars}>
-              <i style={{ background: '#f59e0b' }} /><i style={{ background: '#22c55e' }} /><i style={{ background: '#4f8ef7' }} />
+              <i style={{ background: '#febc2e' }} /><i style={{ background: '#28c840' }} /><i style={{ background: '#8e8e93' }} />
             </span>
             <span><b>{joined}</b>/8 joined</span>
           </div>
@@ -300,6 +306,10 @@ const LandingPage = () => {
 
   useEffect(() => {
     document.title = 'CIRCLO · Meet people nearby';
+    // Match the overscroll area to the page instead of the app's dark body
+    const prev = document.body.style.background;
+    document.body.style.background = getComputedStyle(rootRef.current).getPropertyValue('--ink');
+    return () => { document.body.style.background = prev; };
   }, []);
 
   // Highlight the step closest to the middle of the screen
