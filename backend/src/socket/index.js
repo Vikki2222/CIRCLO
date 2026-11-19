@@ -3,6 +3,7 @@ const { verifyToken } = require('../utils/jwt');
 const User = require('../models/User');
 const logger = require('../utils/logger');
 const chatService = require('../services/chat.service');
+const { chatRoomFor } = require('./emitter');
 
 /**
  * Attaches Socket.io to the HTTP server.
@@ -40,6 +41,7 @@ const initSocket = (httpServer) => {
 
       // Attach user to socket for use in event handlers
       socket.user = user;
+      socket.data.userId = user._id.toString(); // used by emitter.removeFromChat
       next();
     } catch (err) {
       logger.warn(`Socket auth failed: ${err.message}`);
@@ -75,20 +77,45 @@ const initSocket = (httpServer) => {
       logger.debug(`${socket.user.name} left room meetup:${meetupId}`);
     });
 
+    // ── Chat events ───────────────────────────────────────────
+    // Chat uses its own room (chat:<id>), separate from the public
+    // meetup:<id> update room, so only attendees receive messages.
+
+    /**
+     * Client opens a meetup's chat. Attendees only.
+     */
+    socket.on('chat:join_room', async (meetupId) => {
+      try {
+        if (!meetupId) return;
+        if (!(await chatService.isAttendee(meetupId, socket.user._id))) {
+          socket.emit('chat:error', { message: 'Join the meetup to chat.' });
+          return;
+        }
+        socket.join(chatRoomFor(meetupId));
+      } catch (err) {
+        socket.emit('chat:error', { message: 'Unable to open chat.' });
+      }
+    });
+
+    socket.on('chat:leave_room', (meetupId) => {
+      if (meetupId) socket.leave(chatRoomFor(meetupId));
+    });
+
     /**
      * Client sends a chat message.
-     * We save it, then broadcast to the meetup room.
+     * We check membership, save it, then broadcast to the chat room.
      */
-    socket.on('chat:message', async ({ meetupId, text }) => {
+    socket.on('chat:message', async ({ meetupId, text } = {}) => {
       try {
         if (!meetupId || !text?.trim()) return;
 
-        // Only attendees can chat — check room membership
-        const rooms = Array.from(socket.rooms);
-        if (!rooms.includes(`meetup:${meetupId}`)) {
-          socket.emit('chat:error', { message: 'Join the meetup room first.' });
+        // Only current attendees can chat — checked against the DB,
+        // not room membership, so kicked/left users are blocked too.
+        if (!(await chatService.isAttendee(meetupId, socket.user._id))) {
+          socket.emit('chat:error', { message: 'Join the meetup to chat.' });
           return;
         }
+        socket.join(chatRoomFor(meetupId));
 
         const message = await chatService.saveMessage({
           meetupId,
@@ -97,7 +124,7 @@ const initSocket = (httpServer) => {
         });
 
         // Broadcast to everyone in the room (including sender)
-        io.to(`meetup:${meetupId}`).emit('chat:message', {
+        io.to(chatRoomFor(meetupId)).emit('chat:message', {
           _id:       message._id,
           text:      message.text,
           sender:    message.sender,
@@ -110,9 +137,6 @@ const initSocket = (httpServer) => {
         socket.emit('chat:error', { message: 'Failed to send message.' });
       }
     });
-
-    // ── Chat events ───────────────────────────────────────────
-    // Handled in socket/chat.handler.js (Step 7)
 
     // ── Disconnect ────────────────────────────────────────────
     socket.on('disconnect', (reason) => {

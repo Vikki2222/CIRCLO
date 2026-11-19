@@ -18,8 +18,9 @@ const startServer = async () => {
     logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   });
 
-  // Socket.io will attach to this server in a later step
-  // const io = require('./src/socket')(server);
+  // Attach Socket.io and expose it to controllers via req.app.get('io')
+  const io = require('./src/socket')(server);
+  app.set('io', io);
 
   // --- Graceful shutdown ---
   const shutdown = (signal) => {

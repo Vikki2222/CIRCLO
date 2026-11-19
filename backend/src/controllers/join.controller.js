@@ -1,11 +1,13 @@
 const joinService = require('../services/join.service');
 const catchAsync = require('../utils/catchAsync');
+const emitter = require('../socket/emitter');
 
 /**
  * POST /api/v1/meetups/:id/join
  */
 const join = catchAsync(async (req, res) => {
   const meetup = await joinService.joinMeetup(req.params.id, req.user.id);
+  emitter.meetupAttendeesChanged(req.app.get('io'), meetup);
 
   res.status(200).json({
     status: 'success',
@@ -27,6 +29,9 @@ const join = catchAsync(async (req, res) => {
  */
 const leave = catchAsync(async (req, res) => {
   const meetup = await joinService.leaveMeetup(req.params.id, req.user.id);
+  const io = req.app.get('io');
+  emitter.meetupAttendeesChanged(io, meetup);
+  await emitter.removeFromChat(io, meetup._id, req.user.id);
 
   res.status(200).json({
     status: 'success',
@@ -52,6 +57,9 @@ const kick = catchAsync(async (req, res) => {
     req.user.id,
     req.params.userId
   );
+  const io = req.app.get('io');
+  emitter.meetupAttendeesChanged(io, meetup);
+  await emitter.removeFromChat(io, meetup._id, req.params.userId);
 
   res.status(200).json({
     status: 'success',

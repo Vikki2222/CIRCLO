@@ -24,7 +24,9 @@ const ChatDrawer = ({ meetup, onClose }) => {
       .then((res) => setMessages(res.data.data.messages || []))
       .catch((err) => {
         console.log('Chat error:', err.response?.status, err.response?.data);
-        if (err.response?.status !== 404) {
+        if (err.response?.status === 403) {
+          setError('Join the meetup to see the chat.');
+        } else if (err.response?.status !== 404) {
           setError('Failed to load messages.');
         }
       })
@@ -44,8 +46,15 @@ const ChatDrawer = ({ meetup, onClose }) => {
 
     socket.on('chat:message', handleMessage);
     socket.on('chat:error',   handleError);
+    // Subscribe to this meetup's chat (server allows attendees only).
+    // Re-subscribe after a reconnect, since the server forgets rooms.
+    const joinChat = () => socket.emit('chat:join_room', meetup._id);
+    joinChat();
+    socket.on('connect', joinChat);
 
     return () => {
+      socket.emit('chat:leave_room', meetup._id);
+      socket.off('connect', joinChat);
       socket.off('chat:message', handleMessage);
       socket.off('chat:error',   handleError);
     };

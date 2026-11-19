@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const Meetup = require('../models/Meetup');
 const AppError = require('../utils/AppError');
-const emitter = require('../socket/emitter');
 
 /**
  * Atomically join a meetup.

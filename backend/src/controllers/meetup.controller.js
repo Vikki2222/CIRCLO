@@ -1,6 +1,7 @@
 const meetupService = require('../services/meetup.service');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
+const emitter = require('../socket/emitter');
 
 /**
  * POST /api/v1/meetups
@@ -98,6 +99,7 @@ const updateMeetup = catchAsync(async (req, res) => {
  */
 const deleteMeetup = catchAsync(async (req, res) => {
   await meetupService.deleteMeetup(req.params.id, req.user.id);
+  emitter.meetupCancelled(req.app.get('io'), req.params.id);
 
   res.status(204).json({
     status: 'success',

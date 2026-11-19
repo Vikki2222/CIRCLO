@@ -5,7 +5,7 @@ const catchAsync  = require('../utils/catchAsync');
  * GET /api/v1/meetups/:id/messages
  */
 const getMessages = catchAsync(async (req, res) => {
-  const messages = await chatService.getMessages(req.params.id);
+  const messages = await chatService.getMessages(req.params.id, req.user.id);
 
   res.status(200).json({
     status: 'success',
