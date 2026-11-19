@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './LandingPage.module.css';
+import SharedPixelIcon from '../components/PixelIcon';
+import { APP_NAME } from '../components/Brand';
 
 // ─────────────────────────────────────────────────────────────
 // Hooks & helpers
@@ -103,21 +105,8 @@ const CountUp = ({ to, suffix = '' }) => {
   return <span ref={ref}>{value}{suffix}</span>;
 };
 
-// 8×8 pixel icons. '1' = filled pixel.
-const ICONS = {
-  pin:  ['00111100', '01111110', '11100111', '11100111', '01111110', '00111100', '00011000', '00011000'],
-  lock: ['00111100', '01000010', '01000010', '11111111', '11100111', '11100111', '11111111', '11111111'],
-  bolt: ['00001110', '00011100', '00111000', '01111110', '00011100', '00111000', '00110000', '01100000'],
-  grid: ['11011011', '11011011', '00000000', '11011011', '11011011', '00000000', '11011011', '11011011'],
-  key:  ['01110000', '10001000', '10001000', '01111111', '00000101', '00000101', '00000000', '00000000'],
-};
-
 const PixelIcon = ({ name, className = '' }) => (
-  <svg className={`${styles.icon} ${className}`} viewBox="0 0 8 8" shapeRendering="crispEdges" aria-hidden="true">
-    {ICONS[name].flatMap((row, y) =>
-      [...row].map((c, x) => (c === '1' ? <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" /> : null))
-    )}
-  </svg>
+  <SharedPixelIcon name={name} className={`${styles.icon} ${className}`} />
 );
 
 /** "(LABEL)" style button that leans toward the cursor in 2px steps. */
@@ -157,7 +146,7 @@ const STEPS = [
   {
     n: '01',
     title: 'Open the map',
-    body: 'CIRCLO finds you and shows what is starting within 10 km. Green pins have room. Red ones are full.',
+    body: 'Sidequest finds you and shows what is starting within 10 km. Green pins have room. Red ones are full.',
   },
   {
     n: '02',
@@ -191,7 +180,7 @@ const TABS = {
 };
 
 const FAQ = [
-  ['Is CIRCLO free?', 'Yes. Creating, joining and chatting are free.'],
+  ['Is Sidequest free?', 'Yes. Creating, joining and chatting are free.'],
   ['How does it know where I am?', 'Your browser asks for permission once. If you say no, the map opens on a default city and you can still browse.'],
   ['Can strangers read my group chat?', 'No. Chat history and live messages are limited to people who joined that meetup.'],
   ['What happens if a meetup fills up?', 'The pin turns red for everyone and the join button locks. If someone leaves, it reopens automatically.'],
@@ -519,7 +508,7 @@ const LandingPage = () => {
   useReveal(rootRef);
 
   useEffect(() => {
-    document.title = 'CIRCLO · Meet people nearby';
+    document.title = `${APP_NAME} · Meet people nearby`;
     // Match the overscroll area to the page
     const prev = document.body.style.background;
     document.body.style.background = getComputedStyle(rootRef.current).getPropertyValue('--bg');
@@ -552,7 +541,7 @@ const LandingPage = () => {
       <header className={`${styles.nav} ${scrolled ? styles.navScrolled : ''}`}>
         <Link to="/" className={styles.brand} onClick={closeMenu}>
           <PixelIcon name="pin" className={styles.brandIcon} />
-          circlo
+          {APP_NAME}
         </Link>
         <nav className={`${styles.navLinks} ${menuOpen ? styles.navOpen : ''}`} aria-label="Main">
           <a href="#how" onClick={closeMenu}>How it works</a>
@@ -587,7 +576,7 @@ const LandingPage = () => {
                 nearby<span className={styles.cursor} aria-hidden="true" />
               </h1>
               <p className={styles.lede} data-reveal>
-                CIRCLO shows what people around you are doing today. Join a run, a jam
+                Sidequest shows what people around you are doing today. Join a run, a jam
                 session or a study table, then sort the details in the group chat.
               </p>
               <div className={styles.ctaRow} data-reveal>
@@ -701,7 +690,7 @@ const LandingPage = () => {
 
         {/* ── Tabs ──────────────────────────────────────── */}
         <section className={styles.tabsSection}>
-          <div className={styles.tabList} role="tablist" aria-label="Who CIRCLO is for" data-reveal>
+          <div className={styles.tabList} role="tablist" aria-label="Who Sidequest is for" data-reveal>
             {Object.entries(TABS).map(([key, t]) => (
               <button
                 key={key}
@@ -735,7 +724,7 @@ const LandingPage = () => {
         </section>
 
         {/* ── Numbers ───────────────────────────────────── */}
-        <section className={styles.stats} aria-label="CIRCLO in numbers">
+        <section className={styles.stats} aria-label="Sidequest in numbers">
           <div data-reveal><strong><CountUp to={10} /></strong><span>categories to browse</span></div>
           <div data-reveal><strong><CountUp to={10} suffix="km" /></strong><span>search radius</span></div>
           <div data-reveal><strong><CountUp to={500} /></strong><span>people per meetup, max</span></div>
@@ -786,14 +775,14 @@ const LandingPage = () => {
       </main>
 
       <footer className={styles.footer}>
-        <span className={styles.brand}><PixelIcon name="pin" className={styles.brandIcon} />circlo</span>
+        <span className={styles.brand}><PixelIcon name="pin" className={styles.brandIcon} />{APP_NAME}</span>
         <nav aria-label="Footer">
           <a href="#how">How it works</a>
           <a href="#features">Features</a>
           <a href="#faq">FAQ</a>
           <Link to="/login">Sign in</Link>
         </nav>
-        <small>© {new Date().getFullYear()} CIRCLO</small>
+        <small>© {new Date().getFullYear()} {APP_NAME}</small>
       </footer>
     </div>
   );

@@ -11,39 +11,35 @@ L.Icon.Default.mergeOptions({
   shadowUrl:     markerShadow,
 });
 
-// Custom colored circle markers for meetup status
+// Square pixel pins: lime when there is room, red when full
 export const createMeetupIcon = (status) => {
-  const color = status === 'full' ? '#ef4444' : '#22c55e';
-  const ring  = status === 'full' ? '#991b1b' : '#166534';
+  const color = status === 'full' ? '#ff4b3e' : '#c4f25e';
 
   return L.divIcon({
     className: '',
     html: `
       <div style="
-        width: 20px; height: 20px;
+        width: 18px; height: 18px;
         background: ${color};
-        border: 3px solid ${ring};
-        border-radius: 50%;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-        transition: transform 0.3s ease;
+        box-shadow: 0 0 0 3px #111111, 3px 3px 0 3px #000;
       "></div>
     `,
-    iconSize:   [20, 20],
-    iconAnchor: [10, 10],
+    iconSize:   [18, 18],
+    iconAnchor: [9, 9],
   });
 };
 
-export const createUserIcon = () => L.divIcon({
-  className: '',
-  html: `
-    <div style="
-      width: 16px; height: 16px;
-      background: #4f8ef7;
-      border: 3px solid #fff;
-      border-radius: 50%;
-      box-shadow: 0 0 0 4px rgba(79,142,247,0.3);
-    "></div>
-  `,
-  iconSize:   [16, 16],
-  iconAnchor: [8, 8],
-});
+// "You are here" marker
+export const createUserIcon = () =>
+  L.divIcon({
+    className: '',
+    html: `
+      <div style="
+        width: 14px; height: 14px;
+        background: #efeee6;
+        box-shadow: 0 0 0 3px #111111, 0 0 0 5px #efeee6;
+      "></div>
+    `,
+    iconSize:   [14, 14],
+    iconAnchor: [7, 7],
+  });

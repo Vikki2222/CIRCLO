@@ -10,6 +10,7 @@ import MeetupPanel from '../components/MeetupPanel';
 import '../utils/leafletIcons';
 import { createUserIcon } from '../utils/leafletIcons';
 import styles from './MapPage.module.css';
+import Brand from '../components/Brand';
 
 // Listens to map click — used for future "create meetup here" flow
 const MapClickHandler = ({ onClick }) => {
@@ -145,10 +146,7 @@ const MapPage = () => {
 
       {/* ── Navbar ─────────────────────────────────────────── */}
       <nav className={styles.navbar}>
-        <div className={styles.navLogo}>
-          <span className={styles.navLogoIcon}>◎</span>
-          <span>circlo</span>
-        </div>
+        <Brand to="/" />
 
         <div className={styles.navActions}>
           <button
@@ -196,6 +194,7 @@ const MapPage = () => {
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          className="sq-tiles"
         />
 
         <MapClickHandler onClick={() => {}} />

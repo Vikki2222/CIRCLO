@@ -3,6 +3,7 @@ import { joinMeetupApi, leaveMeetupApi } from '../api/meetup.api';
 import { useAuth } from '../context/AuthContext';
 import ChatDrawer from './ChatDrawer';
 import styles from './MeetupPanel.module.css';
+import PixelIcon from './PixelIcon';
 
 const MeetupPanel = ({ meetup, onClose, onJoinLeave }) => {
   const { user }      = useAuth();
@@ -70,7 +71,7 @@ const MeetupPanel = ({ meetup, onClose, onJoinLeave }) => {
           <span className={`${styles.badge} ${styles[meetup.category] || styles.other}`}>
             {meetup.category}
           </span>
-          <button className={styles.closeBtn} onClick={onClose}>✕</button>
+          <button className={styles.closeBtn} onClick={onClose} aria-label="Close"><PixelIcon name="close" /></button>
         </div>
 
         {/* Content */}
@@ -84,19 +85,19 @@ const MeetupPanel = ({ meetup, onClose, onJoinLeave }) => {
           {/* Stats */}
           <div className={styles.stats}>
             <div className={styles.stat}>
-              <span className={styles.statIcon}>👥</span>
+              <span className={styles.statIcon}><PixelIcon name="users" /></span>
               <span>
                 <strong>{count}</strong>/{capacity}
                 {' '}<span className={styles.statLabel}>joined</span>
               </span>
             </div>
             <div className={styles.stat}>
-              <span className={styles.statIcon}>🕐</span>
+              <span className={styles.statIcon}><PixelIcon name="clock" /></span>
               <span className={styles.statLabel}>{formatDate(meetup.startsAt)}</span>
             </div>
             {meetup.location?.address && (
               <div className={styles.stat}>
-                <span className={styles.statIcon}>📍</span>
+                <span className={styles.statIcon}><PixelIcon name="pin" /></span>
                 <span className={styles.statLabel}>{meetup.location.address}</span>
               </div>
             )}
@@ -108,7 +109,7 @@ const MeetupPanel = ({ meetup, onClose, onJoinLeave }) => {
               className={styles.capacityFill}
               style={{
                 width: `${Math.min((count / capacity) * 100, 100)}%`,
-                background: isFull ? '#ef4444' : '#22c55e',
+                background: isFull ? 'var(--sq-red)' : 'var(--sq-lime)',
               }}
             />
           </div>
@@ -148,11 +149,11 @@ const MeetupPanel = ({ meetup, onClose, onJoinLeave }) => {
               className={styles.chatBtn}
               onClick={() => setShowChat((v) => !v)}
             >
-              💬 {showChat ? 'Close Chat' : 'Chat'}
+              <PixelIcon name="chat" /> {showChat ? 'Close chat' : 'Chat'}
             </button>
 
             <button className={styles.directionsBtn} onClick={handleDirections}>
-              🗺 Directions
+              <PixelIcon name="route" /> Directions
             </button>
           </div>
 
@@ -179,7 +180,7 @@ const MeetupPanel = ({ meetup, onClose, onJoinLeave }) => {
             )}
 
             {isHost && (
-              <span className={styles.hostBadge}>⭐ You're hosting this meetup</span>
+              <span className={styles.hostBadge}><PixelIcon name="star" /> You're hosting this meetup</span>
             )}
           </div>
 

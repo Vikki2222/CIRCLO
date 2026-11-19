@@ -3,6 +3,7 @@ import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { getMessagesApi } from '../api/chat.api';
 import styles from './ChatDrawer.module.css';
+import PixelIcon from './PixelIcon';
 
 const ChatDrawer = ({ meetup, onClose }) => {
   const { socket }  = useSocket();
@@ -98,13 +99,13 @@ const ChatDrawer = ({ meetup, onClose }) => {
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerInfo}>
-          <span className={styles.chatIcon}>💬</span>
+          <span className={styles.chatIcon}><PixelIcon name="chat" /></span>
           <div>
             <div className={styles.headerTitle}>Group Chat</div>
             <div className={styles.headerSub}>{meetup.title}</div>
           </div>
         </div>
-        <button className={styles.closeBtn} onClick={onClose}>✕</button>
+        <button className={styles.closeBtn} onClick={onClose} aria-label="Close chat"><PixelIcon name="close" /></button>
       </div>
 
       {/* Messages */}
@@ -121,7 +122,7 @@ const ChatDrawer = ({ meetup, onClose }) => {
 
         {!loading && !error && messages.length === 0 && (
           <div className={styles.empty}>
-            No messages yet. Say hi! 👋
+            No messages yet. Say hi.
           </div>
         )}
 
@@ -182,8 +183,9 @@ const ChatDrawer = ({ meetup, onClose }) => {
           className={styles.sendBtn}
           onClick={handleSend}
           disabled={!text.trim()}
+          aria-label="Send message"
         >
-          ➤
+          <PixelIcon name="send" />
         </button>
       </div>
     </div>

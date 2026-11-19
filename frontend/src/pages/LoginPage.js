@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { loginApi } from '../api/auth.api';
 import { useAuth } from '../context/AuthContext';
 import styles from './Auth.module.css';
+import Brand from '../components/Brand';
 
 const LoginPage = () => {
   const { login }  = useAuth();
@@ -40,14 +41,14 @@ const LoginPage = () => {
   return (
     <div className={styles.page}>
       <div className={styles.card}>
-
-        {/* Logo */}
-        <div className={styles.logo}>
-          <span className={styles.logoIcon}>◎</span>
-          <span className={styles.logoText}>circlo</span>
+        <div className={styles.titlebar} aria-hidden="true">
+          <span>sign-in.exe</span>
+          <span className={styles.winBtns}><i /><i /><i /></span>
         </div>
+        <div className={styles.body}>
+        <div className={styles.logo}><Brand to="/" /></div>
 
-        <h1 className={styles.title}>Welcome back</h1>
+        <h1 className={styles.title}>Welcome<em>/</em> back</h1>
         <p className={styles.subtitle}>Sign in to find meetups near you</p>
 
         {/* Error */}
@@ -106,6 +107,7 @@ const LoginPage = () => {
           Don't have an account?{' '}
           <Link to="/register" className={styles.switchLink}>Create one</Link>
         </p>
+        </div>
       </div>
     </div>
   );

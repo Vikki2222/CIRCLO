@@ -1,6 +1,6 @@
-# CIRCLO
+# Sidequest
 
-CIRCLO is a location-based meetup app. People create meetups that appear as pins on a map, find and join meetups nearby, and chat with other attendees in real time. Hosts can edit or cancel their meetups and remove attendees.
+Sidequest is a location-based meetup app. People create meetups that appear as pins on a map, find and join meetups nearby, and chat with other attendees in real time. Hosts can edit or cancel their meetups and remove attendees.
 
 ## Tech stack
 
@@ -48,7 +48,7 @@ CIRCLO/
 Create `backend/.env`:
 
 ```
-MONGO_URI=mongodb://localhost:27017/circlo
+MONGO_URI=mongodb://localhost:27017/sidequest
 JWT_SECRET=change-me
 JWT_EXPIRES_IN=7d
 GOOGLE_CLIENT_ID=...

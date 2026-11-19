@@ -10,14 +10,14 @@ const MeetupPin = ({ meetup, onClick }) => {
       icon={createMeetupIcon(meetup.status)}
       eventHandlers={{ click: () => onClick(meetup) }}
     >
-      <Tooltip direction="top" offset={[0, -8]} opacity={0.95}>
-        <div style={{ fontFamily: 'Arial', minWidth: 120 }}>
+      <Tooltip direction="top" offset={[0, -10]} opacity={1} className="sq-tooltip">
+        <div style={{ minWidth: 120 }}>
           <div style={{ fontWeight: 700, marginBottom: 2 }}>{meetup.title}</div>
-          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+          <div style={{ color: 'var(--sq-muted)' }}>
             {meetup.attendeeCount ?? meetup.attendees?.length ?? 0} / {meetup.capacity} joined
           </div>
           {meetup.status === 'full' && (
-            <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 600 }}>FULL</div>
+            <div style={{ color: 'var(--sq-red)', fontWeight: 700 }}>Full</div>
           )}
         </div>
       </Tooltip>

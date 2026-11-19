@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { registerApi } from '../api/auth.api';
 import { useAuth } from '../context/AuthContext';
 import styles from './Auth.module.css';
+import Brand from '../components/Brand';
 
 const RegisterPage = () => {
   const { login }  = useAuth();
@@ -43,13 +44,14 @@ const RegisterPage = () => {
   return (
     <div className={styles.page}>
       <div className={styles.card}>
-
-        <div className={styles.logo}>
-          <span className={styles.logoIcon}>◎</span>
-          <span className={styles.logoText}>circlo</span>
+        <div className={styles.titlebar} aria-hidden="true">
+          <span>new-player.exe</span>
+          <span className={styles.winBtns}><i /><i /><i /></span>
         </div>
+        <div className={styles.body}>
+        <div className={styles.logo}><Brand to="/" /></div>
 
-        <h1 className={styles.title}>Create account</h1>
+        <h1 className={styles.title}>New<em>/</em> player</h1>
         <p className={styles.subtitle}>Join meetups happening around you</p>
 
         {error && <div className={styles.error}>{error}</div>}
@@ -119,6 +121,7 @@ const RegisterPage = () => {
           Already have an account?{' '}
           <Link to="/login" className={styles.switchLink}>Sign in</Link>
         </p>
+        </div>
       </div>
     </div>
   );

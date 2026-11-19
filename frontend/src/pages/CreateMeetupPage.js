@@ -2,7 +2,9 @@ import { useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import { createMeetupApi } from '../api/meetup.api';
-import '../utils/leafletIcons';
+import { createMeetupIcon } from '../utils/leafletIcons';
+import Brand from '../components/Brand';
+import PixelIcon from '../components/PixelIcon';
 import styles from './CreateMeetupPage.module.css';
 
 const CATEGORIES = [
@@ -125,18 +127,19 @@ const CreateMeetupPage = () => {
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            className="sq-tiles"
           />
           <PinDropper onDrop={handleDrop} />
-          {pin && <Marker position={[pin.lat, pin.lng]} />}
+          {pin && <Marker position={[pin.lat, pin.lng]} icon={createMeetupIcon('active')} />}
         </MapContainer>
 
         {/* Map instruction overlay */}
         <div className={styles.mapHint}>
           {pin
             ? geocoding
-              ? '📍 Getting address...'
-              : '📍 Pin dropped — move it by clicking elsewhere'
-            : '👆 Click anywhere on the map to set location'
+              ? '> Getting address...'
+              : '> Pin dropped. Click elsewhere to move it'
+            : '> Click anywhere on the map to set location'
           }
         </div>
       </div>
@@ -147,21 +150,19 @@ const CreateMeetupPage = () => {
         {/* Header */}
         <div className={styles.formHeader}>
           <button className={styles.backBtn} onClick={() => navigate('/')}>
-            ← Back
+            <PixelIcon name="back" /> Back
           </button>
-          <div className={styles.formLogo}>
-            <span style={{ color: '#4f8ef7' }}>◎</span> circlo
-          </div>
+          <Brand to="/" />
         </div>
 
-        <h1 className={styles.formTitle}>Create a Meetup</h1>
+        <h1 className={styles.formTitle}>Start a<em>/</em> sidequest</h1>
         <p className={styles.formSubtitle}>
           Drop a pin on the map, then fill in the details.
         </p>
 
         {/* Location preview */}
         <div className={`${styles.locationBox} ${pin ? styles.locationSet : ''}`}>
-          <span className={styles.locationIcon}>📍</span>
+          <span className={styles.locationIcon}><PixelIcon name="pin" /></span>
           <span className={styles.locationText}>
             {pin
               ? geocoding ? 'Getting address...' : address
@@ -284,7 +285,7 @@ const CreateMeetupPage = () => {
           >
             {loading
               ? <><span className={styles.spinner} /> Creating...</>
-              : '🚀 Create Meetup'
+              : 'Create meetup'
             }
           </button>
 
