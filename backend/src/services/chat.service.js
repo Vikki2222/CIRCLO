@@ -3,11 +3,21 @@ const Meetup  = require('../models/Meetup');
 const AppError = require('../utils/AppError');
 
 /**
- * Fetch last N messages for a meetup.
+ * True if the user is in the meetup's attendees (the host always is).
  */
-const getMessages = async (meetupId, limit = 50) => {
+const isAttendee = async (meetupId, userId) =>
+  !!(await Meetup.exists({ _id: meetupId, attendees: userId }));
+
+/**
+ * Fetch last N messages for a meetup. Attendees only.
+ */
+const getMessages = async (meetupId, userId, limit = 50) => {
   const meetup = await Meetup.findById(meetupId);
   if (!meetup) throw new AppError('Meetup not found.', 404);
+
+  if (!(await isAttendee(meetupId, userId))) {
+    throw new AppError('Only attendees can view this chat.', 403);
+  }
 
   const messages = await Message.find({ meetup: meetupId })
     .sort({ createdAt: 1 })
@@ -32,4 +42,4 @@ const saveMessage = async ({ meetupId, senderId, text }) => {
   return message;
 };
 
-module.exports = { getMessages, saveMessage };
+module.exports = { isAttendee, getMessages, saveMessage };
