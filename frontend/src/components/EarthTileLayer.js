@@ -16,35 +16,34 @@ const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">Op
 // Blend two palette colours: t = 0 gives a, t = 1 gives b
 const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 
-// Each kind of map feature gets its own ramp through the earth palette.
-// Brightness from the original tile picks the point on the ramp, so text
-// and outlines stay readable. The ramps are kept narrow on purpose: land
-// and buildings sit close together and colours are softened, so the map
-// reads as calm background and the pins stand out.
+// Each kind of map feature gets its own ramp. Land is a dark charcoal that
+// matches the site, with the globe's greens for parks and blues for water.
+// Brightness from the original tile picks the point on the ramp, so labels
+// and outlines stay readable (land is inverted: dark land, light text).
 // Stops: [luminance, [r, g, b]].
-const SOFT_LAND = mix(EARTH.dry, EARTH.sand, 0.12);
+const LAND = [30, 32, 29];
 const RAMPS = {
   land: [            // land, buildings, rails, labels and their halos
-    [0,   [52, 46, 36]],                      // label text: dark, not black
-    [150, mix(EARTH.rock, EARTH.dry, 0.5)],
-    [205, mix(SOFT_LAND, EARTH.rock, 0.12)],  // buildings: barely darker than land
-    [242, SOFT_LAND],                         // base land
-    [255, mix(EARTH.sand, EARTH.snow, 0.08)], // minor roads and label halos
+    [0,   [228, 230, 220]],   // label text: light
+    [140, [200, 202, 192]],   // grey place names stay light too
+    [185, [60, 62, 57]],
+    [210, [40, 42, 38]],      // buildings: a touch lighter than land
+    [242, LAND],              // base land
+    [255, [74, 77, 70]],      // minor roads and label halos
   ],
   green: [           // parks, grass, woods
-    [140, mix(EARTH.jungle, SOFT_LAND, 0.25)],
-    [200, mix(EARTH.forest, SOFT_LAND, 0.3)],
-    [255, mix(EARTH.grass, SOFT_LAND, 0.3)],
+    [140, mix(EARTH.jungle, LAND, 0.35)],
+    [200, mix(EARTH.forest, LAND, 0.3)],
+    [255, mix(EARTH.grass, LAND, 0.35)],
   ],
   water: [
-    [110, mix(EARTH.ocean, SOFT_LAND, 0.15)],
-    [200, mix(EARTH.shallow, SOFT_LAND, 0.2)],
-    [255, mix(EARTH.shallow, EARTH.air, 0.4)],
+    [110, mix(EARTH.deep, LAND, 0.2)],
+    [200, mix(EARTH.ocean, LAND, 0.15)],
+    [255, mix(EARTH.shallow, LAND, 0.2)],
   ],
   road: [            // coloured main roads
-    [150, SOFT_LAND],
-    [215, mix(EARTH.sand, EARTH.snow, 0.08)],
-    [255, mix(EARTH.sand, EARTH.snow, 0.25)],
+    [150, [74, 77, 70]],
+    [255, [104, 107, 98]],
   ],
 };
 
@@ -77,7 +76,8 @@ const classify = (r, g, b) => {
   }
 
   let ramp = RAMPS.land;
-  if (sat > 0.1 && hue >= 170 && hue <= 235) ramp = RAMPS.water;
+  if (lum < 140) ramp = RAMPS.land;           // text and outlines, whatever their tint
+  else if (sat > 0.1 && hue >= 170 && hue <= 235) ramp = RAMPS.water;
   else if (sat > 0.1 && hue >= 70 && hue < 170) ramp = RAMPS.green;
   else if (sat > 0.18 && lum > 150) ramp = RAMPS.road;
 
