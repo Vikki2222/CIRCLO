@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, Marker, useMapEvents } from 'react-leaflet';
+import EarthTileLayer from '../components/EarthTileLayer';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -191,11 +192,7 @@ const MapPage = () => {
         className={styles.map}
         zoomControl={false}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          className="sq-tiles"
-        />
+        <EarthTileLayer />
 
         <MapClickHandler onClick={() => {}} />
 

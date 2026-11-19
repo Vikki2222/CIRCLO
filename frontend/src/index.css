@@ -85,9 +85,7 @@ body {
 
 /* ── Leaflet, themed ─────────────────────────────────────── */
 
-/* Map tiles in warm earth tones: sandy land, green parks, teal water,
-   dimmed slightly so the lime/red pins stay the brightest things on screen */
-.sq-tiles { filter: sepia(0.3) saturate(1.6) hue-rotate(-10deg) brightness(0.76) contrast(1.12); }
+/* Map tiles are recoloured to the earth palette in components/EarthTileLayer.js */
 .leaflet-container { background: var(--sq-bg-2); font-family: var(--sq-mono); }
 
 .leaflet-tooltip.sq-tooltip {

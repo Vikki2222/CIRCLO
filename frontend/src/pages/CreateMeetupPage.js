@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, Marker, useMapEvents } from 'react-leaflet';
+import EarthTileLayer from '../components/EarthTileLayer';
 import { useNavigate } from 'react-router-dom';
 import { createMeetupApi } from '../api/meetup.api';
 import { createMeetupIcon } from '../utils/leafletIcons';
@@ -124,11 +125,7 @@ const CreateMeetupPage = () => {
           className={styles.map}
           zoomControl={false}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            className="sq-tiles"
-          />
+          <EarthTileLayer />
           <PinDropper onDrop={handleDrop} />
           {pin && <Marker position={[pin.lat, pin.lng]} icon={createMeetupIcon('active')} />}
         </MapContainer>

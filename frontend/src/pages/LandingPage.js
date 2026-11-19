@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import styles from './LandingPage.module.css';
 import SharedPixelIcon from '../components/PixelIcon';
 import { APP_NAME } from '../components/Brand';
+import { EARTH } from '../utils/earthPalette';
 
 // ─────────────────────────────────────────────────────────────
 // Hooks & helpers
@@ -224,21 +225,7 @@ const fbm = (x, y, z, seed) => {
 };
 
 // Earth palette (muted, natural)
-const C = {
-  deep:    [24, 52, 74],
-  ocean:   [34, 74, 98],
-  shallow: [58, 108, 124],
-  sand:    [196, 178, 124],
-  grass:   [108, 146, 70],
-  forest:  [62, 104, 48],
-  jungle:  [44, 80, 38],
-  dry:     [150, 124, 78],
-  rock:    [112, 92, 68],
-  snow:    [232, 236, 228],
-  cloud:   [242, 242, 234],
-  night:   [10, 12, 14],
-  air:     [120, 160, 170],
-};
+const C = EARTH;
 
 const LIGHT = (() => { const v = [-0.55, -0.55, 0.63]; const m = Math.hypot(...v); return v.map((n) => n / m); })();
 
